@@ -45,7 +45,7 @@ public class EmployeeController {
      * @return
      */
     @ApiOperation(value = "Get an Employee details", response = Employee.class, tags = "Employee")
-    @GetMapping("/byId/{empId}")
+    @GetMapping("/{empId}")
     public Employee getEmployeeById(@PathVariable int empId){
         return empService.getEmployeeById(empId);
     }

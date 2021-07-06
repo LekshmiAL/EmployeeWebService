@@ -28,8 +28,8 @@ public class Swagger2UiConfig {
     private ApiInfo metaInfo() {
 
         ApiInfo apiInfo = new ApiInfo(
-                "Swagger 2 API For Employee Microservices",
-                null,
+                "Spring Boot REST API - Swagger 2 UI",
+                "Employee Microservice",
                 "1.0",
                 "Terms of Service",
                 new Contact("Employee Service", null,

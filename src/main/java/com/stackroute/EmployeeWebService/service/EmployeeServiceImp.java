@@ -9,9 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -80,20 +78,12 @@ public class EmployeeServiceImp implements EmployeeService{
     public EmployeeResponseVo getEmployeeProjects(int empId) {
         EmployeeResponseVo responseVo = new EmployeeResponseVo();
         Employee employee = getEmployeeById(empId);
-        Set<Project> projects = new HashSet<>();
         if(employee != null){
             responseVo.setEmployee(employee);
-            ResponseEntity<Integer[]> projectIdsResponse=
-                    restTemplate.getForEntity("http://localhost:8090/api/allocation/projectIds/"+empId,Integer[].class);
-            Integer[] projIds = projectIdsResponse.getBody();
-            if(projIds!=null){
-                for(int pid: projIds){
-                    Project project =
-                            restTemplate.getForObject("http://localhost:8082/api/project/"+pid,Project.class);
-                    projects.add(project);
-                }
-            }
-            responseVo.setProjects(projects);
+            List<Project> projectList=
+                    restTemplate.getForObject("http://localhost:8090/api/allocation/projects/"+empId, List.class);
+           Set<Project> projectSet = projectList.stream().collect(Collectors.toSet());
+           responseVo.setProjects(projectSet);
         }
         return responseVo;
     }
