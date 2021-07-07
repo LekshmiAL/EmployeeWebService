@@ -1,44 +1,39 @@
 package com.stackroute.EmployeeWebService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.stackroute.EmployeeWebService.Controller.EmployeeController;
 import com.stackroute.EmployeeWebService.Model.Employee;
+import com.stackroute.EmployeeWebService.Model.Project;
 import com.stackroute.EmployeeWebService.repository.EmployeeRepository;
 import com.stackroute.EmployeeWebService.service.EmployeeService;
+import com.stackroute.EmployeeWebService.vo.EmployeeResponseVo;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.util.AssertionErrors;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class EmployeeTest {
 
-    @Autowired
+    @MockBean
     private EmployeeService service;
 
-    @Autowired
+    @MockBean
     private EmployeeRepository repository;
 
     @Autowired
@@ -82,25 +77,65 @@ public class EmployeeTest {
         Employee emp = new Employee(101,"Janvi","koul","Developer","janvi@gmail.com","7998467362", LocalDate.of(2019,05,20));
         Mockito.when(service.getEmployeeById(101)).thenReturn(emp);
 
-        mockMvc.perform(get("/api/employee/")).andExpect(status().isOk())
-                .andExpect(jsonPath("$", Matchers.hasSize(1)))
+        mockMvc.perform(get("/api/employee/101")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName", Matchers.equalTo("Janvi")))
                 .andExpect(jsonPath("$.lastName", Matchers.equalTo("koul")))
-                .andExpect(jsonPath("$.designation", Matchers.equalTo("janvi@gmail.com")))
-                .andExpect(jsonPath("$.email", Matchers.equalTo("7998467362")))
-                .andExpect(jsonPath("$.joiningDate", Matchers.equalTo(LocalDate.of(2019,05,20))));
+                .andExpect(jsonPath("$.designation", Matchers.equalTo("Developer")))
+                .andExpect(jsonPath("$.email", Matchers.equalTo("janvi@gmail.com")))
+                .andExpect(jsonPath("$.joiningDate", Matchers.equalTo(LocalDate.of(2019,05,20).toString())));
     }
     @Test
-    public void getAllEmployeesTest(){
-        List<Employee> employeeList = new ArrayList<>();
-        employeeList.add(new Employee(101,"Janvi","koul","Developer","janvi@gmail.com","7998467362", LocalDate.of(2019,05,20)));
-        employeeList.add(new Employee(102,"Micheal","Loui","HR","loui@gmail.com","9994447362", LocalDate.of(2020,02,10)));
-        employeeList.add(new Employee(103,"Harvy","Smith","Manager","harvys@gmail.com","9996757362", LocalDate.of(2021,01,22)));
-        employeeList.add(new Employee(104,"Kishore","shah","Tester","shah@gmail.com","8018467362", LocalDate.of(2018,04,20)));
+    public void getAllEmployeesTest() throws Exception{
 
-        //Mockito.when(service.getAllEmployees()).thenReturn();
+        Employee e1 = new Employee(101,"Janvi","koul","Developer","janvi@gmail.com","7998467362", LocalDate.of(2019,05,20));
+        Set<Project> projectSet1 = new HashSet<>();
+        projectSet1.add(new Project(110, "dell","Application","dell client",
+               new SimpleDateFormat("dd/MM/yyyy").parse("19/10/2020"),
+               new SimpleDateFormat("dd/MM/yyyy").parse("19/09/2021")));
+
+        Employee e2 = new Employee(102,"Micheal","Loui","HR","loui@gmail.com","9994447362", LocalDate.of(2020,02,10));
+        Set<Project> projectSet2 = new HashSet<>();
+        projectSet2.add(new Project(111, "apple","Application","Apple client",
+                new SimpleDateFormat("dd/MM/yyyy").parse("10/10/2020"),
+                new SimpleDateFormat("dd/MM/yyyy").parse("03/12/2021")));
+
+        Set<EmployeeResponseVo> responseVoSet = new HashSet<>();
+        responseVoSet.add(new EmployeeResponseVo(e1,projectSet1));
+        responseVoSet.add(new EmployeeResponseVo(e2,projectSet2));
+
+        Mockito.when(service.getAllEmployees()).thenReturn(responseVoSet);
+
+        mockMvc.perform(get("/api/employee/list")).andExpect(status().isOk())
+                .andExpect(jsonPath("$", Matchers.hasSize(2)))
+                .andExpect(jsonPath("$[0].employee.id",Matchers.equalTo(101)))
+                .andExpect(jsonPath("$[1].employee.id",Matchers.equalTo(102)));
 
     }
+    @Test
+    public void testDeleteEmployee() throws Exception {
+        Employee e1 = new Employee(101,"Janvi","koul","Developer",
+                "janvi@gmail.com","7998467362", LocalDate.of(2019,05,20));
+        Mockito.when(service.deleteEmployee(101)).thenReturn(true);
 
+        mockMvc.perform(delete("/api/employee/delete/101"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Employee with id 101 deleted."));
+    }
+
+    @Test
+    public void getEmployeeWithProjectListTest() throws Exception{
+        Employee e1 = new Employee(101,"Janvi","koul","Developer",
+                "janvi@gmail.com","7998467362", LocalDate.of(2019,05,20));
+        Set<Project> projectSet1 = new HashSet<>();
+        projectSet1.add(new Project(110, "dell","Application","dell client",
+                new SimpleDateFormat("dd/MM/yyyy").parse("19/10/2020"),
+                new SimpleDateFormat("dd/MM/yyyy").parse("19/09/2021")));
+        EmployeeResponseVo responseVo = new EmployeeResponseVo(e1,projectSet1);
+        Mockito.when(service.getEmployeeProjects(101)).thenReturn(responseVo);
+
+        mockMvc.perform(get("/api/employee/employeeWithProjects/101")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.employee.id",Matchers.equalTo(101)))
+                .andExpect(jsonPath("$.projects[0].projectId",Matchers.equalTo(110)));
+    }
 
 }
