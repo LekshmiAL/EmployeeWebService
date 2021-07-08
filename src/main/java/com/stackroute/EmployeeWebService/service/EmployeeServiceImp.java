@@ -5,7 +5,6 @@ import com.stackroute.EmployeeWebService.Model.Project;
 import com.stackroute.EmployeeWebService.repository.EmployeeRepository;
 import com.stackroute.EmployeeWebService.vo.EmployeeResponseVo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -39,24 +38,7 @@ public class EmployeeServiceImp implements EmployeeService{
         Set<Employee> employeeList = empRepo.findAll().stream().collect(Collectors.toSet());
 
         employeeList.forEach(emp -> {
-            EmployeeResponseVo responseVo = new EmployeeResponseVo();
-            Project project;
-            ResponseEntity<Integer[]> response =
-                    restTemplate.getForEntity(
-                            "http://localhost:8083/api/allocation/projectIds/" + emp.getId(),
-                            Integer[].class);
-
-            Integer[] projIds = response.getBody();
-            if (projIds != null) {
-                for (Integer id : projIds) {
-                    project = restTemplate
-                            .getForObject("http://localhost:8082/api/project/" + id, Project.class);
-                    projects.add(project);
-                }
-                responseVo.setProjects(projects);
-            }
-
-            responseVo.setEmployee(emp);
+            EmployeeResponseVo responseVo = getEmployeeProjects(emp.getId());
             empDetails.add(responseVo);
         });
         return empDetails;
@@ -68,8 +50,6 @@ public class EmployeeServiceImp implements EmployeeService{
         if(getEmployeeById(empId)!= null){
             empRepo.deleteById(empId);
             returnStatus = true;
-        }else{
-            returnStatus = false;
         }
         return returnStatus;
     }
@@ -81,7 +61,7 @@ public class EmployeeServiceImp implements EmployeeService{
         if(employee != null){
             responseVo.setEmployee(employee);
             List<Project> projectList=
-                    restTemplate.getForObject("http://localhost:8090/api/allocation/projects/"+empId, List.class);
+                    restTemplate.getForObject("http://ALLOCATION-SERVICE/api/allocation/projects/"+empId, List.class);
            Set<Project> projectSet = projectList.stream().collect(Collectors.toSet());
            responseVo.setProjects(projectSet);
         }
